@@ -12,11 +12,10 @@ import java.util.*;
  */
 
 public class FileIO {
-	//for storing the number of each pieces
-	public static int [] buffer = new int [7];
+
 	
 	/**
-	 * This file reads from input file to buffer
+	 * Reads from input file to buffer
 	 * @author Banner B. Schafer
 	 * @version 1.0
 	 * 
@@ -37,25 +36,25 @@ public class FileIO {
 			switch (piece) 
 			{
 				case 0:
-					buffer[0] ++;
+					State.buffer[0] ++;
 					break;
 				case 1:
-					buffer[1] ++;
+					State.buffer[1] ++;
 					break;
 				case 2:
-					buffer[2] ++;
+					State.buffer[2] ++;
 					break;
 				case 3:
-					buffer[3] ++;
+					State.buffer[3] ++;
 					break;
 				case 4:
-					buffer[4] ++;
+					State.buffer[4] ++;
 					break;
 				case 5:
-					buffer[5] ++;
+					State.buffer[5] ++;
 					break;
 				case 6:
-					buffer[6] ++;
+					State.buffer[6] ++;
 					break;
 				default:
 					//do nothing
@@ -99,7 +98,6 @@ public class FileIO {
 			try {
 				out.createNewFile();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -126,7 +124,6 @@ public class FileIO {
 		try {
 			o = new PrintWriter(output);
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		

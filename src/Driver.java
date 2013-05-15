@@ -43,15 +43,19 @@ import java.io.PrintWriter;
 public class Driver {
 	public static void main(String[] args) 
 	{
-		//input file location
-		String input = "/home/banner/workspace/Tetris/input";
-		String output = "/home/banner/workspace/Tetris/output";
+
 		
-		FileIO.validateIOFiles(input, output);
+		FileIO.validateIOFiles(State.input, State.output);
 		
-		PrintWriter out = FileIO.outPW(output);
+		PrintWriter out = FileIO.outPW(State.output);
 				
-		FileIO.readInput(input);
+		FileIO.readInput(State.input);
+		
+		//TODO Generate board array 
+		//TODO Rotate Piece
+		//TODO clear row
+		
+		//Examples
 		FileIO.writeOut(5, 6, 7, out);
 		FileIO.writeOut(5, 7, 8, out);
 		

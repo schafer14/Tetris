@@ -16,13 +16,12 @@ public class Helper {
 	 * 
 	 */
 	static void printBufferContents(){
-		System.out.println("Buffer [0] = " + FileIO.buffer[0]);
-		System.out.println("Buffer [1] = " + FileIO.buffer[1]);
-		System.out.println("Buffer [2] = " + FileIO.buffer[2]);
-		System.out.println("Buffer [3] = " + FileIO.buffer[3]);
-		System.out.println("Buffer [4] = " + FileIO.buffer[4]);
-		System.out.println("Buffer [5] = " + FileIO.buffer[5]);
-		System.out.println("Buffer [6] = " + FileIO.buffer[6]);
+		System.out.println("Buffer [1] = " + State.buffer[1]);
+		System.out.println("Buffer [2] = " + State.buffer[2]);
+		System.out.println("Buffer [3] = " + State.buffer[3]);
+		System.out.println("Buffer [4] = " + State.buffer[4]);
+		System.out.println("Buffer [5] = " + State.buffer[5]);
+		System.out.println("Buffer [6] = " + State.buffer[6]);
 		
 	}
 	
