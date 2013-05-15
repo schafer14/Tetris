@@ -1,3 +1,5 @@
+import java.io.PrintWriter;
+
 /**
  * Driver.java 
  * 
@@ -28,9 +30,6 @@
  *
  */
 
-//package declaration
-
-//imports
 
 /**
  * The Driver class initalizes and begins proccesses for the Tetris program
@@ -46,7 +45,16 @@ public class Driver {
 	{
 		//input file location
 		String input = "/home/banner/workspace/Tetris/input";
+		String output = "/home/banner/workspace/Tetris/output";
+		
+		FileIO.validateIOFiles(input, output);
+		
+		PrintWriter out = FileIO.outPW(output);
 				
 		FileIO.readInput(input);
+		FileIO.writeOut(5, 6, 7, out);
+		FileIO.writeOut(5, 7, 8, out);
+		
+		out.close();
 	}
 }

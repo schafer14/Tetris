@@ -1,4 +1,3 @@
-import java.nio.Buffer;
 
 /**
  * Helper.java contains all functions helper and debugging functions
@@ -10,6 +9,12 @@ import java.nio.Buffer;
  */
 public class Helper {
 
+	/**
+	 * Prints contents of buffer
+	 * @author Banner B. Schafer
+	 * @version 1.0
+	 * 
+	 */
 	static void printBufferContents(){
 		System.out.println("Buffer [0] = " + FileIO.buffer[0]);
 		System.out.println("Buffer [1] = " + FileIO.buffer[1]);
