@@ -3,9 +3,9 @@
  * Helper.java contains all functions helper and debugging functions
  * 
  * @version 1.0 15 May 2013
- * 
+ * @author Libo Yin
  * @author Banner B. Schafer
- * 
+ * @version 1.0
  */
 public class Helper {
 

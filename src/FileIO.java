@@ -17,6 +17,7 @@ public class FileIO {
 	/**
 	 * Reads from input file to buffer
 	 * @author Banner B. Schafer
+	 * @author Libo Yin
 	 * @version 1.0
 	 * 
 	 */
