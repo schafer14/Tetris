@@ -44,7 +44,9 @@
 public class Driver {
 	public static void main(String[] args) 
 	{
-		//stores the number of each piece in avaliable for play. 
-		int[] buffer = new int [7];
+		//input file location
+		String input = "/home/banner/workspace/Tetris/input";
+				
+		FileIO.readInput(input);
 	}
 }
