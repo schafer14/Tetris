@@ -51,7 +51,6 @@ public class Driver {
 				
 		FileIO.readInput(State.input);
 		
-		//TODO Generate board array 
 		//TODO Rotate Piece
 		//TODO clear row
 		
