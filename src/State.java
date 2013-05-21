@@ -3,8 +3,10 @@
  * Contains all the data relevant to the current state of the program
  * 
  * @version 1.0 15 May 2013
- * @author Libo Yin
+ * 
  * @author Banner B. Schafer
+ * @author Libo Yin
+ * 
  * @version 1.0
  */
 public class State {

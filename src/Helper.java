@@ -3,8 +3,10 @@
  * Helper.java contains all functions helper and debugging functions
  * 
  * @version 1.0 15 May 2013
- * @author Libo Yin
+ * 
  * @author Banner B. Schafer
+ * @author Libo Yin
+ * 
  * @version 1.0
  */
 public class Helper {
@@ -15,7 +17,8 @@ public class Helper {
 	 * @version 1.0
 	 * 
 	 */
-	static void printBufferContents(){
+	static void printBufferContents()
+	{
 		System.out.println("Buffer [1] = " + State.buffer[1]);
 		System.out.println("Buffer [2] = " + State.buffer[2]);
 		System.out.println("Buffer [3] = " + State.buffer[3]);
@@ -24,5 +27,7 @@ public class Helper {
 		System.out.println("Buffer [6] = " + State.buffer[6]);
 		
 	}
+	
+	
 	
 }
