@@ -6,19 +6,11 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.channels.Channels;
 
-interface IO
-{	
-	public int read();
-	public void write( String s );
-	public void close();
-}
-
 /**
- * A note on encoding:
- * There is no convenient way to automatically detect the right char set to use. Java.io.FileReader assumes system default charset.
- * TODO What are the default charsets of common OS? Is it possible to specify the default charset of JVM?
+ * This class is an almost general purpose character I/O handler. There exists a small amount of task specific code in the load() method.
+ * A note on encoding: There is no convenient way to automatically detect the right char set to use. Java.io.FileReader assumes system default charset.
  */
-public class FileIO2 implements IO
+public class FileIO implements IO
 {
 	private FileInputStream is;
 	private FileOutputStream os;
@@ -33,7 +25,7 @@ public class FileIO2 implements IO
 	 * @param o - output file name
 	 * @param l - length of input buffer
 	 */
-	public FileIO2( String i, String o, int l )
+	public FileIO( String i, String o, int l )
 	{
 		try
 		{
@@ -69,8 +61,7 @@ public class FileIO2 implements IO
 	}
 	
 	/**
-	 * This method loads the input buffer, and labels each element as valid or invalid
-	 * TODO Line ** is task specific. To generalize it, consider introducing an interface with accept(int) method.
+	 * This method loads the input buffer, do necessary transformation, and labels each element as valid or invalid.
 	 * @return true if EOF is reached, false otherwise
 	 */
 	private boolean load()
@@ -86,25 +77,31 @@ public class FileIO2 implements IO
 		}
 		if( l==-1 )
 			return true;
+		// Code within the for loop is task specific. To generalize, introduce an interface with transform( int i ) method,	which returns the transformed value if i is accepted, and -1 otherwise.
 		for( int i=0 ; i<l ; i++ )
 		{
-			if( a[i]<49 || a[i]>55 ) // **
+			if( a[i]<49 || a[i]>55 )
 				v[i]=false;
 			else
+			{
+				a[i]-=48;
 				v[i]=true;
+			}
 		}
 		c=0;
 		return false;
 	}
 	
 	/**
-	 * This method returns the next valid char from the input file.
+	 * This method returns the next valid input. The definition of a valid input is defined in the load() method.
 	 * The read operation is buffered.
-	 * @return the next valid char, -1 if EOF is reached
+	 * @return the next valid input, or -1 if EOF is reached
 	 */
 	@Override
 	public int read()
 	{
+		if( l==-1 )
+			return -1;
 		while( true )
 		{
 			if( c==l )
