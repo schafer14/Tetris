@@ -1,11 +1,16 @@
 import java.util.Arrays;
 
+/**
+ * This class is a synchronized implementation of maximum heap.
+ * Function calls to isEmpth(), add( E e ), and head() are mutual-exclusive.
+ * @param <E> extends Comparable<E>
+ */
 public class SyncMaxHeap<E extends Comparable<E>>
 {
 	@SuppressWarnings( "unchecked" )
 	private E[] a=(E[]) new Comparable[10];
 	private int c=0;
-	private int[] m=new int[0];
+	private final int[] m=new int[0];
 	
 	public boolean isEmpty()
 	{

@@ -2,130 +2,202 @@ import java.util.Arrays;
 
 public class Game
 {
-	// draft
-	public void run()
+	private static final int[][][][] tetEnum; // tetEnum=tetrimino enumeration. tetEnum[tetrimino][rotation][position][0]=lower bound (inclusive); .[1]=upper bound (exclusive). te[0] is not used.
+	private static final int tetTypes; // tetCount=number of tetriminos
+	private final int boardWid, bufSize; // boardWid=board width
+	private IO io;
+	
+	public Game( IO io, int boardWid, int bufSize )
 	{
-		int bw=11;
-		SyncMaxHeap<Node> h=new SyncMaxHeap<>();
-		int[][][][] te=Main.te;
-		Node n=h.head();
-		int i, j, jl, k, kl;
-		for( i=1 ; i<8 ; i++ )
+		this.io=io;
+		this.boardWid=boardWid;
+		this.bufSize=bufSize;
+	}
+	
+	public long run()
+	{
+		long score=0;
+		int[] headBuf=new int[tetTypes], currentBuf;
+		int i, j, jl, k, kl, bufCursor=buildBuf( headBuf );
+		Node head=new Node( new boolean[5][boardWid], new int[boardWid] ), current;
+		head.buf=headBuf;
+		SyncMaxHeap<Node> q;
+		while( bufCursor!=0 )
 		{
-			for( j=0, jl=te[i].length ; j<jl ; j++ )
+			q=new SyncMaxHeap<>();
+			for( i=1 ; i<tetTypes ; i++ )
 			{
-				for( k=0, kl=bw-te[i][j].length ; k<kl ; k++ )
-					h.add( fork( n, i, j, k ) );
-				// search depth control: min( remaining tetriminos in the buffer, search level )
+				if( headBuf[i]==0 )
+					continue;
+				for( j=0, jl=tetEnum[i].length ; j<jl ; j++ )
+				{
+					for( k=0, kl=boardWid-tetEnum[i][j].length ; k<kl ; k++ )
+					{
+						current=Node.branch( head, tetEnum[i][j], k );
+						currentBuf=Arrays.copyOf( headBuf, tetTypes );
+						currentBuf[i]--;
+						current.buf=currentBuf;
+						score+=Node.eliminate( current );
+						current.rootChoice=i;
+						current.depth=bufCursor;
+						current.mark=Evaluator.mark( current );
+						q.add( current );
+					}
+				}
+			}
+			head=search( q );
+			headBuf[head.rootChoice]--;
+			i=io.read();
+			if( i>0 )
+				headBuf[i]++;
+			else
+				bufCursor--;
+		}
+		return score;
+	}
+	
+	private int buildBuf( int[] buf )
+	{
+		int i, j;
+		for( i=0 ; i<bufSize ; i++ )
+		{
+			j=io.read();
+			if( j==-1 )
+				break;
+			buf[j]++;
+		}
+		return i;
+	}
+	
+	private Node search( SyncMaxHeap<Node> q )
+	{
+		Search s=new Search( q );
+		Thread t=new Thread( s );
+		t.start();
+		try
+		{
+			t.join();
+		}
+		catch( InterruptedException e )
+		{}
+		while( s.isRunning() )
+		{
+			try
+			{
+				s.wait();
+			}
+			catch( InterruptedException e )
+			{
+				continue;
+			}
+		}
+		return q.head();
+	}
+	
+	// TODO
+	private class Search implements Runnable
+	{
+		private final int[] threadControl=new int[0];
+		private final int threadMax;
+		private int threadCount=0;
+		private SyncMaxHeap<Node> q;
+		private long cutOff=180000;
+		
+		private Search( SyncMaxHeap<Node> q )
+		{
+			this.q=q;
+			threadMax=Runtime.getRuntime().availableProcessors();
+			cutOff+=System.nanoTime();
+		}
+		
+		@Override
+		public void run()
+		{
+			synchronized( threadControl )
+			{
+				if( System.nanoTime()>cutOff )
+					return;
+				threadCount++;
+				if( threadCount<threadMax )
+				{
+					for( int i=threadCount ; i<threadMax ; i++ )
+						new Thread( this ).start();
+				}
+			}
+			Node head=q.head(), current;
+			if( head.depth==0 )
+			{
+				postRun();
+				return;
+			}
+			int i, j, jl, k, kl;
+			boolean exists;
+			for( i=1 ; i<tetTypes ; i++ )
+			{
+				exists=head.buf[i]>0;
+				for( j=0, jl=tetEnum[i].length ; j<jl ; j++ )
+				{
+					for( k=0, kl=boardWid-tetEnum[i][j].length ; k<kl ; k++ )
+					{
+						current=Node.branch( head, tetEnum[i][j], k );
+					}
+					// search depth control: min( remaining tetriminos in the buffer, search level )
+				}
+			}
+			postRun();
+		}
+		
+		private void postRun()
+		{
+			synchronized( threadControl )
+			{
+				threadCount--;
+				this.notify();
+			}
+		}
+		
+		public boolean isRunning()
+		{
+			synchronized( threadControl )
+			{
+				return threadCount!=0;
 			}
 		}
 	}
 	
-	/**
-	 * This method updates a board by putting a given tetrimino into a given position. Rows that become full are not eliminated.
-	 * The input parameters are not altered.
-	 * @param n - node
-	 * @param ti - tetrimino index
-	 * @param i - tetrimino rotation
-	 * @param p - position of anchor point
-	 * @return new board
-	 */
-	public static Node fork( Node n, int i, int j, int p )
+	static
 	{
-		float v;
-		int[] a=Arrays.copyOf( n.a, n.a.length );
-		if( a[i]==0 )
-			v=(float)1/7;
-		else
-		{
-			v=1F;
-			a[i]--;
-		}
-		int[][] t=Main.te[i][j];
-		int m, l, w=t.length; // w=tetrimino width
-		t=copyOf( t, w );
-		boolean[][] b=n.b;
-		int[] s=n.s;
-		for( i=1, j=s[p]-t[0][0], m=j>0?j:0 ; i<w ; i++ )
-		{
-			j=s[p+i]-t[i][0];
-			if( j>m )
-				m=j;
-		}
-		for( i=0 ; i<w ; i++ )
-		{
-			t[i][0]+=m;
-			t[i][1]+=m;
-		}
-		for( i=1, m=t[0][1] ; i<w ; i++ )
-		{
-			j=t[i][1];
-			if( j>m )
-				m=j;
-		}
-		l=b.length;
-		b=( m>l ) ? copyOf( b, l+5 ) : ( m<l-5 ? copyOf( b, l-5 ) : copyOf( b, l ) );
-		s=Arrays.copyOf( s, s.length );
-		for( i=p+w-1 ; i>=p ; i-- )
-		{
-			for( j=t[i][0], l=t[i][1] ; j<l ; j++ )
-				b[i][j]=true;
-			s[i]=l;
-		}
-		v*=evaluate( b, s ); // must not be merged into the nect line, as evaluate() changes its args
-		return new Node( b, a, s, n.d-1, v );
-	}
-	
-	public static float evaluate( boolean[][] b, int[] s )
-	{
-		float[] ew=Main.ew;
-		float v=0;
-		return v;
-	}
-	
-	/**
-	 * This method is an analogy to the Arrays.copyOf(), but for 2D boolean array with fixed width.
-	 * The input parameters are not altered.
-	 * @param s - source array
-	 * @param l - length of copied array
-	 * @return copied array
-	 */
-	public static boolean[][] copyOf( boolean[][] s, int l )
-	{
-		int i, j=s.length, il=s[0].length;
-		l=(j<l)?j:l;
-		boolean[][] a=new boolean[l][il];
-		boolean[] ar, sr;
-		for( i=0 ; i<l ; i++ )
-		{
-			ar=a[i];
-			sr=s[i];
-			for( j=0 ; j<il ; j++ )
-				ar[j]=sr[j];
-		}
-		return a;
-	}
-	
-	/**
-	 * This method is an analogy to the Arrays.copyOf(), but for 2D int array with fixed width.
-	 * The input parameters are not altered.
-	 * @param s - source array
-	 * @param l - length of copied array
-	 * @return copied array
-	 */
-	public static int[][] copyOf( int[][] s, int l )
-	{
-		int i, j=s.length, il=s[0].length;
-		l=(j<l)?j:l;
-		int[][] a=new int[l][il];
-		int[] ar, sr;
-		for( i=0 ; i<l ; i++ )
-		{
-			ar=a[i];
-			sr=s[i];
-			for( j=0 ; j<il ; j++ )
-				ar[j]=sr[j];
-		}
-		return a;
+		int[] a={ 0, 1 }, b={ 0, 2 }, c={ 0, 3 }, d={ 1, 2 }, e={ 2, 3 }, f={ 1, 3 };
+		tetTypes=8;
+		tetEnum=new int[8][][][];
+		tetEnum[1]=new int[2][][];
+		tetEnum[1][0]=new int[1][];
+		tetEnum[1][0][0]=new int[]{ 0, 4 };
+		tetEnum[1][1]=new int[][]{ a, a, a, a };
+		tetEnum[2]=new int[1][][];
+		tetEnum[2][0]=new int[][]{ b, b };
+		tetEnum[3]=new int[4][][];
+		tetEnum[3][0]=new int[][]{ c, d };
+		tetEnum[3][1]=new int[][]{ a, b, a };
+		tetEnum[3][2]=new int[][]{ d, c };
+		tetEnum[3][3]=new int[][]{ d, b, d };
+		tetEnum[4]=new int[4][][];
+		tetEnum[4][0]=new int[][]{ c, e };
+		tetEnum[4][1]=new int[][]{ b, a, a };
+		tetEnum[4][2]=new int[][]{ a, c };
+		tetEnum[4][3]=new int[][]{ d, d, b };
+		tetEnum[5]=new int[4][][];
+		tetEnum[5][0]=new int[][]{ e, c };
+		tetEnum[5][1]=new int[][]{ b, d, d };
+		tetEnum[5][2]=new int[][]{ c, a };
+		tetEnum[5][3]=new int[][]{ a, a, b };
+		tetEnum[6]=new int[2][][];
+		tetEnum[6][0]=new int[][]{ f, b };
+		tetEnum[6][1]=new int[][]{ a, b, d };
+		tetEnum[7]=new int[2][][];
+		tetEnum[7][0]=new int[2][];
+		tetEnum[7][0][0]=b;
+		tetEnum[7][0][1]=new int[]{ 1, 3 };
+		tetEnum[7][1]=new int[][]{ d, b, a };
 	}
 }
