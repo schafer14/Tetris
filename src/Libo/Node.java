@@ -4,7 +4,7 @@ import java.util.Arrays;
 public class Node implements Comparable<Node>
 {
 	public boolean[][] board;
-	public int[] buf, surface, rootTet;
+	public int[] buf, surface, rootTet; // surface contains the height of every columns (exclusive)
 	public int depth; // remaining search depth, used for cutoff
 	public float mark;
 	public Node root;
@@ -106,8 +106,18 @@ public class Node implements Comparable<Node>
 					i--;
 			}
 		}
-		for( i=0 ; i<width ; i++ )
-			s[i]-=count;
+		if( count>0 )
+		{
+			for( i=0 ; i<width ; i++ )
+			{
+				for( j=s[i]-count-1 ; j>=0 ; j-- )
+				{
+					if( b[j][i] )
+						break;
+				}
+				s[i]=j+1;
+			}
+		}
 		return count;
 	}
 	
