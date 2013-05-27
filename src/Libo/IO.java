@@ -1,4 +1,7 @@
-package Libo;
+
+/**
+ * This interface generalizes I/O interfaces.
+ */
 public interface IO
 {	
 	/**

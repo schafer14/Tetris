@@ -1,197 +1,21 @@
-import java.util.Arrays;
+import static java.util.Arrays.copyOf;
 
 public class Game
 {
-	private static final int[][][][] tetEnum; // tetEnum=tetrimino enumeration. tetEnum[tetrimino][rotation][position][0]=lower bound (inclusive); .[1]=upper bound (exclusive). te[0] is not used.
-	private static final int tetTypes; // tetTypes=number of tetriminos
+	/**
+	 * 4D array tetEnum denotes the shape of all possible rotations of all possible tetriminos.
+	 * tetEnum[tet][rotation][column][0] denotes the lower bound (inclusive); .[1] denotes the upper bound (exclusive).
+	 * This array is hand-coded in the static block. tetEnum[0] is not used.
+	 * The anchor point of a tetrimino is always at the bottom-left corner.
+	 */
+	private static final int[][][][] tetEnum;
+	
+	/**
+	 * TetTypes denotes the total number of tetrimino types. It is generated automatically from tetEnum.
+	 */
+	private static final int tetTypes;
 	private final int boardWid, bufSize;
 	private IO io;
-	
-	public Game( IO io, int boardWid, int bufSize )
-	{
-		this.io=io;
-		this.boardWid=boardWid;
-		this.bufSize=bufSize;
-	}
-	
-	public long run()
-	{
-		long score=0;
-		int[] headBuf=new int[tetTypes], currentBuf, headRootTet;
-		int i, j, jl, k, kl, bufCursor=buildBuf( headBuf );
-		Node head=new Node( new boolean[5][boardWid], new int[boardWid] ), current;
-		head.buf=headBuf;
-		SyncMaxHeap<Node> q;
-		while( bufCursor!=0 )
-		{
-			q=new SyncMaxHeap<>();
-			for( i=1 ; i<tetTypes ; i++ )
-			{
-				if( headBuf[i]==0 )
-					continue;
-				for( j=0, jl=tetEnum[i].length ; j<jl ; j++ )
-				{
-					for( k=0, kl=boardWid-tetEnum[i][j].length ; k<kl ; k++ )
-					{
-						current=Node.branch( head, tetEnum[i][j], k );
-						currentBuf=Arrays.copyOf( headBuf, tetTypes );
-						currentBuf[i]--;
-						current.buf=currentBuf;
-						score+=Node.eliminate( current );
-						current.depth=bufCursor;
-						current.mark=Evaluator.mark( current );
-						current.root=current;
-						current.rootTet=new int[]{ i, j, k };
-						q.add( current );
-					}
-				}
-			}
-			head=search( q );
-			headRootTet=head.rootTet;
-			headBuf[headRootTet[0]]--;
-			i=io.read();
-			if( i>0 )
-				headBuf[i]++;
-			else
-				bufCursor--;
-			io.write( headRootTet[0] + "\t" + headRootTet[1] + "\t" + headRootTet[2] + "\n" );
-		}
-		return score;
-	}
-	
-	private int buildBuf( int[] buf )
-	{
-		int i, j;
-		for( i=0 ; i<bufSize ; i++ )
-		{
-			j=io.read();
-			if( j==-1 )
-				break;
-			buf[j]++;
-		}
-		return i;
-	}
-	
-	private Node search( SyncMaxHeap<Node> q )
-	{
-		Search s=new Search( q );
-		Thread t=new Thread( s );
-		t.start();
-		try
-		{
-			t.join();
-		}
-		catch( InterruptedException e )
-		{}
-		while( s.isRunning() )
-		{
-			try
-			{
-				s.wait();
-			}
-			catch( InterruptedException e )
-			{
-				continue;
-			}
-		}
-		return s.optimal.root;
-	}
-	
-	private class Search implements Runnable
-	{
-		private final int threadMax=Runtime.getRuntime().availableProcessors();
-		private volatile int threadCount=0;
-		private long cutOff=180000;
-		private SyncMaxHeap<Node> q;
-		public volatile Node optimal;
-		private final int[] threadMon=new int[0], optimalMon=new int[0];
-		
-		private Search( SyncMaxHeap<Node> q )
-		{
-			this.q=q;
-			optimal=q.peek();
-			cutOff+=System.nanoTime();
-		}
-		
-		@Override
-		public void run()
-		{
-			synchronized( threadMon )
-			{
-				if( System.nanoTime()>cutOff )
-				{
-					this.notify();
-					return;
-				}
-				threadCount++;
-				newThread();
-			}
-			Node head=q.head(), current;
-			if( head==null || head.depth==0 )
-			{
-				postRun();
-				return;
-			}
-			int i, j, jl, k, kl;
-			int[] headBuf=head.buf;
-			boolean realTet;
-			for( i=1 ; i<tetTypes ; i++ )
-			{
-				realTet=head.buf[i]>0;
-				for( j=0, jl=tetEnum[i].length ; j<jl ; j++ )
-				{
-					for( k=0, kl=boardWid-tetEnum[i][j].length ; k<kl ; k++ )
-					{
-						current=Node.branch( head, tetEnum[i][j], k );
-						current.buf=Arrays.copyOf( headBuf, tetTypes );
-						if( realTet )
-							current.buf[i]--;
-						current.depth=head.depth-1;
-						Node.eliminate( current );
-						current.mark=realTet ? Evaluator.mark( current ) : Evaluator.mark( current )/tetTypes;
-						synchronized( optimalMon )
-						{
-							if( current.mark>optimal.mark )
-								optimal=current;
-						}
-						current.root=head.root;
-						current.rootTet=head.rootTet;
-						q.add( current );
-					}
-				}
-			}
-			postRun();
-		}
-		
-		private void postRun()
-		{
-			synchronized( threadMon )
-			{
-				threadCount--;
-				if( threadCount==0 && q.isEmpty() )
-					this.notify();
-				else
-					newThread();
-			}
-		}
-		
-		private void newThread()
-		{
-			if( threadCount<threadMax )
-			{
-				for( int i=threadCount ; i<threadMax ; i++ )
-					new Thread( this ).start(); // TODO execute same thread multiple times might not work. Consider changing to ThreadPool.
-			}
-		}
-		
-		public boolean isRunning()
-		{
-			synchronized( threadMon )
-			{
-				return threadCount!=0;
-			}
-		}
-	}
 	
 	static
 	{
@@ -227,5 +51,132 @@ public class Game
 		tetEnum[7][0][0]=b;
 		tetEnum[7][0][1]=new int[]{ 1, 3 };
 		tetEnum[7][1]=new int[][]{ d, b, a };
+	}
+	
+	/**
+	 * This initializer returns a new Game instance with given IO handler, board width, and buffer size.
+	 * The given IO handler is closed at the end of the run() method.
+	 * @param io - IO handler
+	 * @param boardWid - board width
+	 * @param bufSize - buffer size
+	 */
+	public Game( IO io, int boardWid, int bufSize )
+	{
+		this.io=io;
+		this.boardWid=boardWid;
+		this.bufSize=bufSize;
+	}
+	
+	public long run()
+	{
+		long score=0;
+		Node pn=new Node( new boolean[5][boardWid], new int[boardWid] ), cn; // pn=physical node, cn=current hypothetical node
+		int[] buf=new int[tetTypes], a;
+		int i, j, jl, k, kl, bufCursor=buildBuf( buf );
+		SyncMaxHeap<Node> q;
+		while( bufCursor>0 )
+		{
+			q=new SyncMaxHeap<>();
+			for( i=1 ; i<tetTypes ; i++ )
+			{
+				if( buf[i]==0 )
+					continue;
+				for( j=0, jl=tetEnum[i].length ; j<jl ; j++ )
+				{
+					for( k=0, kl=boardWid-tetEnum[i][j].length ; k<=kl ; k++ ) // <= here instead of <
+					{
+						cn=pn.branch( tetEnum[i][j], k );
+						a=copyOf( buf, tetTypes );
+						a[i]--;
+						cn.buf=a;
+						cn.depth=bufCursor-1;
+						cn.rootTet=new int[]{ i, j, k, cn.eliminate() };
+						cn.mark=Evaluator.mark( cn );
+						cn.root=cn;
+						q.add( cn );
+					}
+				}
+			}
+			pn=search( q );
+			buf=pn.buf;
+			i=io.read();
+			if( i==-1 )
+				bufCursor--;
+			else
+				buf[i]++;
+			a=pn.rootTet;
+			score+=a[3];
+			io.write( a[0] + ", " + a[1] + ", " + a[2] + ", height=" + Evaluator.pileHeight( pn ) + ", score=" + score + "\n" );
+		}
+		io.close();
+		return score;
+	}
+	
+	private int buildBuf( int[] buf )
+	{
+		int i, j;
+		for( i=0 ; i<bufSize ; i++ )
+		{
+			j=io.read();
+			if( j==-1 )
+				break;
+			buf[j]++;
+		}
+		return i;
+	}
+	
+	private Node search( SyncMaxHeap<Node> q )
+	{
+		Search s=new Search( q );
+		s.run();
+		return s.optimal.root;
+	}
+	
+	private class Search
+	{
+		private final long cutOff;
+		private SyncMaxHeap<Node> q;
+		public Node optimal;
+		
+		private Search( SyncMaxHeap<Node> q )
+		{
+			this.q=q;
+			optimal=q.peek();
+			cutOff=System.nanoTime()+180000;
+		}
+		
+		public void run()
+		{
+			while( !q.isEmpty() )
+			{
+				if( System.nanoTime()>cutOff )
+					return;
+				Node head=q.head(), cn;
+				int i, j, jl, k, kl;
+				boolean realTet;
+				for( i=1 ; i<tetTypes ; i++ )
+				{
+					realTet=head.buf[i]>0;
+					for( j=0, jl=tetEnum[i].length ; j<jl ; j++ )
+					{
+						for( k=0, kl=boardWid-tetEnum[i][j].length ; k<=kl ; k++ )
+						{
+							cn=head.branch( tetEnum[i][j], k );
+							cn.buf=copyOf( head.buf, tetTypes );
+							if( realTet )
+								cn.buf[i]--;
+							cn.depth=head.depth-1;
+							cn.eliminate();
+							cn.mark=realTet ? Evaluator.mark( cn ) : Evaluator.mark( cn )/tetTypes;
+							if( cn.mark>optimal.mark )
+								optimal=cn;
+							cn.rootTet=head.rootTet;
+							cn.root=head.root;
+							q.add( cn );
+						}
+					}
+				}
+			}
+		}
 	}
 }

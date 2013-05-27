@@ -1,20 +1,19 @@
-package Libo;
 import java.util.Random;
 
 public class RandomIO implements IO
 {
 	private Random r=new Random();
-	private long cutOff=60000000;
+	private long cutOff;
 	
-	public RandomIO()
+	public RandomIO( long cutOff )
 	{
-		cutOff+=System.nanoTime();
+		this.cutOff=cutOff+System.currentTimeMillis();
 	}
 	
 	@Override
 	public int read()
 	{
-		if( System.nanoTime()<cutOff )
+		if( System.currentTimeMillis()<cutOff )
 			return r.nextInt( 7 )+1;
 		else
 			return -1;
@@ -23,7 +22,7 @@ public class RandomIO implements IO
 	@Override
 	public void write( String s )
 	{
-		System.out.println( s );
+		System.out.print( s );
 	}
 
 	@Override

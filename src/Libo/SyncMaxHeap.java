@@ -1,9 +1,9 @@
-package Libo;
-import java.util.Arrays;
+import static java.util.Arrays.copyOf;
 
 /**
  * This class is a synchronized implementation of maximum heap.
  * Function calls to isEmpth(), add( E e ), head(), and peek() are mutually exclusive.
+ * No documentation is created for methods, as they are exactly the same as a naive max heap.
  * @param <E> extends Comparable<E>
  */
 public class SyncMaxHeap<E extends Comparable<E>>
@@ -26,7 +26,7 @@ public class SyncMaxHeap<E extends Comparable<E>>
 		synchronized( m )
 		{
 			if( c==a.length )
-				a=Arrays.copyOf( a, c*2 );
+				a=copyOf( a, c*2 );
 			a[c]=e;
 			up( c++ );
 		}
@@ -58,7 +58,7 @@ public class SyncMaxHeap<E extends Comparable<E>>
 				down( 0 );
 			}
 			if( c<=a.length/4 )
-				a=Arrays.copyOf( a, a.length/2 );
+				a=copyOf( a, a.length/2 );
 			return r;
 		}
 	}

@@ -1,5 +1,3 @@
-package Libo;
-
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -8,30 +6,30 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.channels.Channels;
 
-/**
- * This class is an almost general purpose character I/O handler. There exists a small amount of task specific code in the load() method.
- * A note on encoding: There is no convenient way to automatically detect the right char set to use. Java.io.FileReader assumes system default charset.
- */
 public class FileIO implements IO
 {
 	private FileInputStream is;
 	private FileOutputStream os;
 	private Reader r;
 	private Writer w;
-	private char[] a; // a=input buffer array
-	private boolean[] v; // v=buffer validity flags
-	private int c, l; // c=buffer cursor, l=effective buffer length
+	private char[] ib; // ib=input buffer
+	private boolean[] iv; // v=input buffer validity flags
+	private int ic, il; // ic=input buffer cursor; il=effective input buffer length
+	private String[] ob; // ob=output buffer
+	private int oc, ol; // oc=output buffer cursor; ol=output buffer length
 	
 	/**
-	 * @param i - input file name
-	 * @param o - output file name
-	 * @param l - length of input buffer
+	 * This initializer returns a new FileIO object.
+	 * @param inputFileName - input file name
+	 * @param outputFileName - output file name
+	 * @param inputBufferSize - input buffer size
+	 * @param outputBufferSize - output buffer size
 	 */
-	public FileIO( String i, String o, int l )
+	public FileIO( String inputFileName, String outputFileName, int inputBufferSize, int outputBufferSize )
 	{
 		try
 		{
-			is=new FileInputStream( i );
+			is=new FileInputStream( inputFileName );
 		}
 		catch( FileNotFoundException e )
 		{
@@ -39,7 +37,7 @@ public class FileIO implements IO
 		}
 		try
 		{
-			os=new FileOutputStream( o );
+			os=new FileOutputStream( outputFileName );
 		}
 		catch( FileNotFoundException e )
 		{
@@ -53,13 +51,16 @@ public class FileIO implements IO
 				e1.printStackTrace();
 			}
 		}
-		i=System.getProperty( "file.encoding" );
-		r=Channels.newReader( is.getChannel(), i );
-		w=Channels.newWriter( os.getChannel(), i );
-		this.l=l;
-		a=new char[l];
-		v=new boolean[l];
-		c=l;
+		String e=System.getProperty( "file.encoding" );
+		r=Channels.newReader( is.getChannel(), e );
+		w=Channels.newWriter( os.getChannel(), e );
+		this.il=inputBufferSize;
+		ib=new char[inputBufferSize];
+		iv=new boolean[inputBufferSize];
+		ic=inputBufferSize; // this line ensures that the buffer is loaded at the first time read() is called
+		this.ol=outputBufferSize;
+		ob=new String[outputBufferSize];
+		oc=0;
 	}
 	
 	/**
@@ -70,27 +71,28 @@ public class FileIO implements IO
 	{
 		try
 		{
-			l=r.read( a );
+			il=r.read( ib );
 		}
-		catch( Exception e )
+		catch( IOException e )
 		{
 			e.printStackTrace();
 			close();
 		}
-		if( l==-1 )
+		if( il==-1 )
 			return true;
-		// Code within the for loop is task specific. To generalize, introduce an interface with transform( int i ) method,	which returns the transformed value if i is accepted, and -1 otherwise.
-		for( int i=0 ; i<l ; i++ )
+		// Code within the for loop is task specific. This is the only instance of task specific code in class FileIO.
+		// To generalize, introduce an interface with transform( int i ) method, which returns the transformed value if i is accepted, and -1 otherwise.
+		for( int i=0 ; i<il ; i++ )
 		{
-			if( a[i]<49 || a[i]>55 )
-				v[i]=false;
+			if( ib[i]<49 || ib[i]>55 )
+				iv[i]=false;
 			else
 			{
-				a[i]-=48;
-				v[i]=true;
+				ib[i]-=48;
+				iv[i]=true;
 			}
 		}
-		c=0;
+		ic=0;
 		return false;
 	}
 	
@@ -102,41 +104,47 @@ public class FileIO implements IO
 	@Override
 	public int read()
 	{
-		if( l==-1 )
-			return -1;
 		while( true )
 		{
-			if( c==l )
+			if( ic==il || il==-1 )
 			{
 				if( load() )
 					return -1;
 			}
-			if( !v[c] )
+			if( !iv[ic] )
 			{
-				c++;
+				ic++;
 				continue;
 			}
-			return a[c++];
+			return ib[ic++];
 		}
 	}
 	
 	/**
-	 * This method writes a given String to the output file.
-	 * The write operation is not buffered. This is to maximise the amount of data preserved when the potential crash happens.
+	 * This method writes a given String to the output file. No EOL is appended after the String.
+	 * The write operation is buffered. The buffer is flushed every time it is full. The last flush happens when close() is called.
 	 * @param s - the String to write
 	 */
 	@Override
 	public void write( String s )
 	{
-		try
+		if( oc<ol )
+			ob[oc++]=s;
+		else
 		{
-			w.write( s );
-			w.flush();
-		}
-		catch( IOException e )
-		{
-			e.printStackTrace();
-			close();
+			try
+			{
+				for( int i=0 ; i<ol ; i++ )
+					w.write( ob[i] );
+				w.flush();
+			}
+			catch( IOException e )
+			{
+				e.printStackTrace();
+				close();
+			}
+			ob[0]=s;
+			oc=1;
 		}
 	}
 	
@@ -149,6 +157,7 @@ public class FileIO implements IO
 	{
 		try
 		{
+			w.flush();
 			is.close();
 		}
 		catch( IOException e )
