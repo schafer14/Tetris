@@ -1,10 +1,10 @@
-package Libo;
 import java.util.Arrays;
 
 public class Node implements Comparable<Node>
 {
 	public boolean[][] board;
-	public int[] buf, surface, rootTet; // surface contains the height of every columns (exclusive)
+	public int[] buf, surface, rootTet; // buf: tetrimino buffer; surface: the height of every columns (exclusive)
+	// rootTet: the tetrimino placed at the root level. rootTet[0]=tetrimino; .[1]=rotation; .[2]=position
 	public int depth; // remaining search depth, used for cutoff
 	public float mark;
 	public Node root;
@@ -37,12 +37,12 @@ public class Node implements Comparable<Node>
 	public static Node branch( Node n, int[][] tet, int pos )
 	{
 		int i, j, l, max, tetWid=tet.length;
-		boolean[][] board=n.board;
-		int[] surface=n.surface;
+		boolean[][] b=n.board;
+		int[] s=n.surface;
 		// find the maximum number of rows that a tetrimino has to be lifted
 		for( i=0, max=0 ; i<tetWid ; i++ )
 		{
-			j=surface[pos+i]-tet[i][0]; // micro-optimisation
+			j=s[pos+i]-tet[i][0]; // micro-optimisation
 			if( j>max )
 				max=j;
 		}
@@ -53,24 +53,25 @@ public class Node implements Comparable<Node>
 			tet[i][0]+=max;
 			tet[i][1]+=max;
 		}
-		// find the highest column of the surface (exclusive)
+		// find the highest column of the updated area (exclusive)
 		for( i=0, max=0 ; i<tetWid ; i++ )
 		{
 			j=tet[i][1]; // micro-optimisation
 			if( j>max )
 				max=j;
 		}
-		l=board.length;
-		board=( max>l ) ? copyOf( board, l+5 ) : ( max<l-5 ? copyOf( board, l-5 ) : copyOf( board, l ) );
-		surface=Arrays.copyOf( surface, surface.length );
-		// update the board and the surface array 
-		for( i=pos+tetWid-1 ; i>=pos ; i-- )
+		l=b.length;
+		b=( max>l ) ? copyOf( b, l+5 ) : ( max<l-5 ? copyOf( b, l-5 ) : copyOf( b, l ) );
+		s=Arrays.copyOf( s, s.length );
+		// update the board and the surface array
+		for( i=tetWid-1 ; i>=0 ; i-- )
 		{
-			for( j=tet[i][0], l=tet[i][1] ; j<l ; j++ )
-				board[i][j]=true;
-			surface[i]=l;
+			l=pos+i; // micro-optimisation
+			for( j=tet[i][0], max=tet[i][1] ; j<max ; j++ )
+				b[j][l]=true;
+			s[l]=max;
 		}
-		return new Node( board, surface );
+		return new Node( b, s );
 	}
 	
 	/**
@@ -106,6 +107,7 @@ public class Node implements Comparable<Node>
 					i--;
 			}
 		}
+		// update surface array
 		if( count>0 )
 		{
 			for( i=0 ; i<width ; i++ )
@@ -150,8 +152,8 @@ public class Node implements Comparable<Node>
 	private static boolean[][] copyOf( boolean[][] original, int newLength )
 	{
 		int i, j=original.length, width=original[0].length;
-		newLength=(j<newLength)?j:newLength;
 		boolean[][] a=new boolean[newLength][width];
+		newLength=(j<newLength)?j:newLength;
 		boolean[] ar, or; // row pointers
 		for( i=0 ; i<newLength ; i++ )
 		{
@@ -173,8 +175,8 @@ public class Node implements Comparable<Node>
 	private static int[][] copyOf( int[][] original, int newLength )
 	{
 		int i, j=original.length, width=original[0].length;
-		newLength=(j<newLength)?j:newLength;
 		int[][] a=new int[newLength][width];
+		newLength=(j<newLength)?j:newLength;
 		int[] ar, or; // row pointers
 		for( i=0 ; i<newLength ; i++ )
 		{

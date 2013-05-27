@@ -43,16 +43,20 @@ public class NodeTest {
 	@Test
 	public void testBranch() {
 		boolean[][] board = { { true, true, true, false, true },
-				{ true, false, true, true, false, false },
+				{ true, false, true, true, false },
 				{ false, false, true, false, false } };
 
-		boolean[][] expectedBoard = { { true, true, true, true, false, true },
-				{ true, false, true, true, false, false },
-				{ false, false, true, true, false, false },
-				{ false, true, true, true, false, false } };
+		boolean[][] expectedBoard = { { false, false, false, false, false },
+				{ false, false, false, false, false },
+				{ false, false, false, false, false },
+				{ false, true, false, false, false },
+				{ false, true, true, true, false },
+				{ false, false, true, false, false },
+				{ true, false, true, true, false },
+				{ true, true, true, false, false } };
 
-		int[] surface = { 2, 1, 3, 2, 0, 1 };
-		int[] expectedSurface = { 2, 4, 4, 4, 0, 1 };
+		int[] surface = { 2, 1, 3, 2, 1 };
+		int[] expectedSurface = { 2, 5, 4, 4, 1 };
 
 		int[][] testTet = {{0, 2}, {0, 1}, {0, 1}};
 

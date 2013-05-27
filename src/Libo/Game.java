@@ -1,4 +1,3 @@
-package Libo;
 import java.util.Arrays;
 
 public class Game
@@ -25,7 +24,7 @@ public class Game
 		SyncMaxHeap<Node> q;
 		while( bufCursor!=0 )
 		{
-			q=new SyncMaxHeap<Node>();
+			q=new SyncMaxHeap<>();
 			for( i=1 ; i<tetTypes ; i++ )
 			{
 				if( headBuf[i]==0 )
@@ -100,17 +99,16 @@ public class Game
 	
 	private class Search implements Runnable
 	{
-		private final int threadMax;
-		private int threadCount=0;
+		private final int threadMax=Runtime.getRuntime().availableProcessors();
+		private volatile int threadCount=0;
 		private long cutOff=180000;
 		private SyncMaxHeap<Node> q;
-		public Node optimal;
-		private final int[] threadMon=new int[0];
+		public volatile Node optimal;
+		private final int[] threadMon=new int[0], optimalMon=new int[0];
 		
 		private Search( SyncMaxHeap<Node> q )
 		{
 			this.q=q;
-			threadMax=Runtime.getRuntime().availableProcessors();
 			optimal=q.peek();
 			cutOff+=System.nanoTime();
 		}
@@ -151,8 +149,11 @@ public class Game
 						current.depth=head.depth-1;
 						Node.eliminate( current );
 						current.mark=realTet ? Evaluator.mark( current ) : Evaluator.mark( current )/tetTypes;
-						if( current.mark>optimal.mark )
-							optimal=current;
+						synchronized( optimalMon )
+						{
+							if( current.mark>optimal.mark )
+								optimal=current;
+						}
 						current.root=head.root;
 						current.rootTet=head.rootTet;
 						q.add( current );
@@ -179,7 +180,7 @@ public class Game
 			if( threadCount<threadMax )
 			{
 				for( int i=threadCount ; i<threadMax ; i++ )
-					new Thread( this ).start();
+					new Thread( this ).start(); // TODO execute same thread multiple times might not work. Consider changing to ThreadPool.
 			}
 		}
 		
