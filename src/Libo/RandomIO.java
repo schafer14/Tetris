@@ -4,11 +4,20 @@ import java.util.Random;
 public class RandomIO implements IO
 {
 	private Random r=new Random();
+	private long cutOff=60000000;
+	
+	public RandomIO()
+	{
+		cutOff+=System.nanoTime();
+	}
 	
 	@Override
 	public int read()
 	{
-		return r.nextInt( 7 )+1;
+		if( System.nanoTime()<cutOff )
+			return r.nextInt( 7 )+1;
+		else
+			return -1;
 	}
 
 	@Override
