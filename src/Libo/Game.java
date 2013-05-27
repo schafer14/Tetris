@@ -3,8 +3,8 @@ import java.util.Arrays;
 public class Game
 {
 	private static final int[][][][] tetEnum; // tetEnum=tetrimino enumeration. tetEnum[tetrimino][rotation][position][0]=lower bound (inclusive); .[1]=upper bound (exclusive). te[0] is not used.
-	private static final int tetTypes; // tetCount=number of tetriminos
-	private final int boardWid, bufSize; // boardWid=board width
+	private static final int tetTypes; // tetTypes=number of tetriminos
+	private final int boardWid, bufSize;
 	private IO io;
 	
 	public Game( IO io, int boardWid, int bufSize )
@@ -17,7 +17,7 @@ public class Game
 	public long run()
 	{
 		long score=0;
-		int[] headBuf=new int[tetTypes], currentBuf;
+		int[] headBuf=new int[tetTypes], currentBuf, headRootTet;
 		int i, j, jl, k, kl, bufCursor=buildBuf( headBuf );
 		Node head=new Node( new boolean[5][boardWid], new int[boardWid] ), current;
 		head.buf=headBuf;
@@ -38,20 +38,23 @@ public class Game
 						currentBuf[i]--;
 						current.buf=currentBuf;
 						score+=Node.eliminate( current );
-						current.rootChoice=i;
 						current.depth=bufCursor;
 						current.mark=Evaluator.mark( current );
+						current.root=current;
+						current.rootTet=new int[]{ i, j, k };
 						q.add( current );
 					}
 				}
 			}
 			head=search( q );
-			headBuf[head.rootChoice]--;
+			headRootTet=head.rootTet;
+			headBuf[headRootTet[0]]--;
 			i=io.read();
 			if( i>0 )
 				headBuf[i]++;
 			else
 				bufCursor--;
+			io.write( headRootTet[0] + "\t" + headRootTet[1] + "\t" + headRootTet[2] + "\n" );
 		}
 		return score;
 	}
@@ -91,57 +94,68 @@ public class Game
 				continue;
 			}
 		}
-		return q.head();
+		return s.optimal.root;
 	}
 	
-	// TODO
 	private class Search implements Runnable
 	{
-		private final int[] threadControl=new int[0];
 		private final int threadMax;
 		private int threadCount=0;
-		private SyncMaxHeap<Node> q;
 		private long cutOff=180000;
+		private SyncMaxHeap<Node> q;
+		public Node optimal;
+		private final int[] threadMon=new int[0];
 		
 		private Search( SyncMaxHeap<Node> q )
 		{
 			this.q=q;
 			threadMax=Runtime.getRuntime().availableProcessors();
+			optimal=q.peek();
 			cutOff+=System.nanoTime();
 		}
 		
 		@Override
 		public void run()
 		{
-			synchronized( threadControl )
+			synchronized( threadMon )
 			{
 				if( System.nanoTime()>cutOff )
-					return;
-				threadCount++;
-				if( threadCount<threadMax )
 				{
-					for( int i=threadCount ; i<threadMax ; i++ )
-						new Thread( this ).start();
+					this.notify();
+					return;
 				}
+				threadCount++;
+				newThread();
 			}
 			Node head=q.head(), current;
-			if( head.depth==0 )
+			if( head==null || head.depth==0 )
 			{
 				postRun();
 				return;
 			}
 			int i, j, jl, k, kl;
-			boolean exists;
+			int[] headBuf=head.buf;
+			boolean realTet;
 			for( i=1 ; i<tetTypes ; i++ )
 			{
-				exists=head.buf[i]>0;
+				realTet=head.buf[i]>0;
 				for( j=0, jl=tetEnum[i].length ; j<jl ; j++ )
 				{
 					for( k=0, kl=boardWid-tetEnum[i][j].length ; k<kl ; k++ )
 					{
 						current=Node.branch( head, tetEnum[i][j], k );
+						current.buf=Arrays.copyOf( headBuf, tetTypes );
+						if( realTet )
+							current.buf[i]--;
+						current.depth=head.depth-1;
+						Node.eliminate( current );
+						current.mark=realTet ? Evaluator.mark( current ) : Evaluator.mark( current )/tetTypes;
+						if( current.mark>optimal.mark )
+							optimal=current;
+						current.root=head.root;
+						current.rootTet=head.rootTet;
+						q.add( current );
 					}
-					// search depth control: min( remaining tetriminos in the buffer, search level )
 				}
 			}
 			postRun();
@@ -149,16 +163,28 @@ public class Game
 		
 		private void postRun()
 		{
-			synchronized( threadControl )
+			synchronized( threadMon )
 			{
 				threadCount--;
-				this.notify();
+				if( threadCount==0 && q.isEmpty() )
+					this.notify();
+				else
+					newThread();
+			}
+		}
+		
+		private void newThread()
+		{
+			if( threadCount<threadMax )
+			{
+				for( int i=threadCount ; i<threadMax ; i++ )
+					new Thread( this ).start();
 			}
 		}
 		
 		public boolean isRunning()
 		{
-			synchronized( threadControl )
+			synchronized( threadMon )
 			{
 				return threadCount!=0;
 			}

@@ -3,9 +3,10 @@ import java.util.Arrays;
 public class Node implements Comparable<Node>
 {
 	public boolean[][] board;
-	public int[] buf, surface;
-	public int rootChoice, depth;
+	public int[] buf, surface, rootTet;
+	public int depth;
 	public float mark;
+	public Node root;
 	
 	public Node( boolean[][] board, int[] surface )
 	{
@@ -28,8 +29,8 @@ public class Node implements Comparable<Node>
 	 * Rows that become full are not eliminated.
 	 * The input parameters are not altered.
 	 * @param n - node
-	 * @param tet - tetrimino to be added
-	 * @param pos - position of anchor point
+	 * @param tet - tetrimino
+	 * @param pos - position of the anchor point
 	 * @return branched node
 	 */
 	public static Node branch( Node n, int[][] tet, int pos )
@@ -68,16 +69,16 @@ public class Node implements Comparable<Node>
 	}
 	
 	/**
-	 * This method eliminates all rows that are full in the board of a given node. The surface array of the node is not updated.
-	 * The board of the given node is altered.
+	 * This method eliminates all rows that are full in the board of a given node. The surface array of the node is also updated.
+	 * The board and surface array of the given node are altered.
 	 * @param n - node
 	 * @return number of eliminated rows
 	 */
 	public static int eliminate( Node n )
 	{
 		boolean[][] b=n.board;
-		int i, j, l, height=b.length, count=0;
-		boolean[] r;
+		int[] s=n.surface;
+		int i, j, height=b.length, width=s.length, count=0;
 		LABEL:
 		for( i=0 ; i<height ; i++ )
 		{
@@ -90,20 +91,20 @@ public class Node implements Comparable<Node>
 				case 1:
 					// Consider revising: Currently, the board is moved down each time a full row is detected.
 					// However, full rows must be consecutive, and the maximum number of such consecutive rows is 4.
-					for( j=i, l=height-1 ; j<l ; j++ )
+					for( j=i, height-- ; j<height ; j++ )
 						b[j]=b[j+1];
-					r=b[height-1];
-					for( j=0, l=r.length ; j<l ; j++ )
-						r[j]=false;
+					b[height]=new boolean[width];
 					count++;
 					i--;
 			}
 		}
+		for( i=0 ; i<width ; i++ )
+			s[i]-=count;
 		return count;
 	}
 	
 	/**
-	 * This methods returns whether elements in a given boolean array are all true, all false, or not all the same.
+	 * This methods check whether elements in a given boolean array are all true, all false, or not all the same.
 	 * The input parameters are not altered.
 	 * @param a - boolean array
 	 * @return 1 if all true, -1 if all false, 0 if not all the same  

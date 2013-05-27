@@ -2,7 +2,7 @@ import java.util.Arrays;
 
 /**
  * This class is a synchronized implementation of maximum heap.
- * Function calls to isEmpth(), add( E e ), and head() are mutual-exclusive.
+ * Function calls to isEmpth(), add( E e ), head(), and peek() are mutually exclusive.
  * @param <E> extends Comparable<E>
  */
 public class SyncMaxHeap<E extends Comparable<E>>
@@ -31,10 +31,22 @@ public class SyncMaxHeap<E extends Comparable<E>>
 		}
 	}
 	
+	public E peek()
+	{
+		synchronized( m )
+		{
+			if( c==0 )
+				return null;
+			return a[0];
+		}
+	}
+	
 	public E head()
 	{
 		synchronized( m )
 		{
+			if( c==0 )
+				return null;
 			E r=a[0];
 			if( c--==1 )
 				a[0]=null;
