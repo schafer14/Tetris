@@ -1,8 +1,11 @@
-
+package Libo;
 public class Main
 {	
-	public static final int[][][][] te=new int[8][][][]; // te=tetrimino enumeration. te[tetrimino][rotation][position][0]=lower bound (inclusive); .[1]=upper bound (exclusive). te[0] is not used.
-	public static final float[] ew={ 0, 0, 0, 0, 0 }; // ew=evaluation weight vector. TODO ew[0]=; ew[1]=; ew[2]=; ew[3]=; ew[4]=
+	// te=tetrimino enumeration. te[tetrimino][rotation][position][0]=lower bound (inclusive); .[1]=upper bound (exclusive). te[0] is not used.
+	public static final int[][][][] te=new int[8][][][]; 
+	// ew=evaluation weight vector. TODO ew[0]=; ew[1]=; ew[2]=; ew[3]=; ew[4]=
+	public static final float[] ew={ 0, 0, 0, 0, 0 };
+	
 	
 	static
 	{
@@ -40,6 +43,6 @@ public class Main
 	
 	public static void main( String[] args )
 	{
-		
+
 	}
 }

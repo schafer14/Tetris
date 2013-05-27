@@ -1,4 +1,4 @@
-
+package Libo;
 public class EvaluatorTest
 {	
 	public static void main( String[] args )
@@ -11,9 +11,7 @@ public class EvaluatorTest
 				{ 1,0,0,0,1,1 },
 				{ 0,0,0,0,0,0 }} );
 		int[] s={ 5,4,3,2,5,5 };
-		Node n=new Node();
-		n.b=b;
-		n.s=s;
+		Node n=new Node(b, s);
 		Evaluator.mark( n );
 	}
 	

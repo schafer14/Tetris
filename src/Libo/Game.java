@@ -1,3 +1,4 @@
+package Libo;
 import java.util.Arrays;
 
 public class Game
@@ -24,7 +25,7 @@ public class Game
 		SyncMaxHeap<Node> q;
 		while( bufCursor!=0 )
 		{
-			q=new SyncMaxHeap<>();
+			q=new SyncMaxHeap<Node>();
 			for( i=1 ; i<tetTypes ; i++ )
 			{
 				if( headBuf[i]==0 )

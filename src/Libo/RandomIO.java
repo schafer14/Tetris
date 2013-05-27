@@ -1,3 +1,4 @@
+package Libo;
 import java.util.Random;
 
 public class RandomIO implements IO

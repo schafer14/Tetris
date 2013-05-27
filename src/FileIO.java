@@ -13,14 +13,7 @@ import java.util.*;
 
 public class FileIO {
 
-	
-	/**
-	 * Reads from input file to buffer
-	 * @author Banner B. Schafer
-	 * @author Libo Yin
-	 * @version 1.0
-	 * 
-	 */
+
 	static void readInput (String input) 
 	{
 		Scanner in = null;
@@ -120,15 +113,15 @@ public class FileIO {
 	 */
 	static PrintWriter outPW(String output)
 	{
-		PrintWriter o = null;
+		PrintWriter pw = null;
 		
 		try {
-			o = new PrintWriter(output);
+			pw = new PrintWriter(output);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
 		
-		return o;
+		return pw;
 	}
 
 
