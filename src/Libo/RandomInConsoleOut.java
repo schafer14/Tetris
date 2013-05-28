@@ -1,11 +1,11 @@
 import java.util.Random;
 
-public class RandomIO implements IO
+public class RandomInConsoleOut implements IO
 {
 	private Random r=new Random();
 	private long cutOff;
 	
-	public RandomIO( long cutOff )
+	public RandomInConsoleOut( long cutOff )
 	{
 		this.cutOff=cutOff+System.currentTimeMillis();
 	}
@@ -18,13 +18,16 @@ public class RandomIO implements IO
 		else
 			return -1;
 	}
-
+	
 	@Override
 	public void write( String s )
 	{
-		System.out.print( s );
+		synchronized( r )
+		{
+			System.out.print( s );
+		}
 	}
-
+	
 	@Override
 	public void close()
 	{
