@@ -67,12 +67,16 @@ public class Game
 		this.bufSize=bufSize;
 	}
 	
-	public int[] run()
+	/**
+	 * This method runs the game and returns the score when input ends.
+	 * @return score
+	 */
+	public long run()
 	{
-		//long score=0;
+		long score=0;
 		Node head=new Node( new boolean[5][boardWid], new int[boardWid] ), cn; // cn=current hypothetical node
 		int[] buf=new int[tetTypes], a;
-		int i, j, jl, k, kl, bufCursor=buildBuf( buf ), score=0;
+		int i, j, jl, k, kl, bufCursor=buildBuf( buf );
 		SyncMaxHeap<Node> q;
 		while( bufCursor>0 )
 		{
@@ -107,12 +111,18 @@ public class Game
 				bufCursor--;
 			else
 				buf[i]++;
-			//io.write( a[0] + ", " + a[1] + ", " + a[2] + ", height=" + Evaluator.pileHeight( head ) + ", score=" + score + "\n" );
+			//io.write( a[0] + " " + a[1] + " " + a[2] + " " + Evaluator.pileHeight( head ) + " " + score +"\n" );
+			io.write( a[0] + " " + a[1] + " " + a[2] + "\n" );
 		}
 		io.close();
-		return new int[]{ score, Evaluator.pileHeight( head ) };
+		return score;
 	}
 	
+	/**
+	 * This method loads the tetrimino buffer before the game starts.
+	 * @param buf - the buffer
+	 * @return total number of tetriminoes in the buffer
+	 */
 	private int buildBuf( int[] buf )
 	{
 		int i, j;
@@ -126,14 +136,19 @@ public class Game
 		return i;
 	}
 	
+	/**
+	 * This method returns the best root choice in the queue. Physical nodes and hypothetical nodes are branched here.
+	 * @param q - the priority queue to start with
+	 * @return the best root choice
+	 */
 	private Node search( SyncMaxHeap<Node> q )
 	{
 		if( q.peek().depth==0 )
-			return q.head();
+			return q.head(); // In case bufSize==1, the search tree is not expanded.
 		Search s=new Search( q );
 		for( int i=0, l=Runtime.getRuntime().availableProcessors() ; i<l ; i++ )
 			new Thread( s ).start();
-		synchronized( q )
+		synchronized( q ) // q is used as the thread control lock in a Search instance
 		{
 			try
 			{
@@ -142,12 +157,10 @@ public class Game
 			catch( InterruptedException e )
 			{}
 		}
-		Node n;
 		synchronized( s.optimal )
 		{
-			n=s.optimal.root;
+			return s.optimal.root;
 		}
-		return n;
 	}
 	
 	private class Search implements Runnable
@@ -156,7 +169,6 @@ public class Game
 		private final long cutOff;
 		private SyncMaxHeap<Node> q;
 		private volatile Node optimal;
-		private final int[] threadMon=new int[0];
 		
 		private Search( SyncMaxHeap<Node> q )
 		{
@@ -168,7 +180,7 @@ public class Game
 		@Override
 		public void run()
 		{
-			synchronized( threadMon )
+			synchronized( q )
 			{
 				threadCount++;
 			}
@@ -180,6 +192,9 @@ public class Game
 				if( System.currentTimeMillis()>cutOff )
 					break;
 				head=q.head();
+				/* Because all possible descendents of a node are expanded until the depth limit or the time limit has been reached,
+				 * the queue length increases monotonously before it reaches the peak, and decreases monotonously afterwards.
+				 * As a result, when the queue length reaches 0, the search is guaranteed to end. */ 
 				if( head==null )
 					break;
 				if( head.depth==0 )
@@ -197,6 +212,8 @@ public class Game
 								cn.buf[i]--;
 							cn.depth=head.depth-1;
 							cn.eliminate();
+							/* TODO Theoretically, a tetrimino that does not exist in the buffer has a 1/tetTypes probability to come.
+							 * However, in real practice, it seems that such a node is seldomly chosen. */
 							cn.mark=realTet ? Evaluator.mark( cn ) : Evaluator.mark( cn )*tetTypes;
 							synchronized( optimal )
 							{
@@ -210,15 +227,11 @@ public class Game
 					}
 				}
 			}
-			synchronized( threadMon )
+			synchronized( q )
 			{
+				// The caller can be notified multiple times. However, the first notification is already the end of search.
 				if( --threadCount==0 )
-				{
-					synchronized( q )
-					{
-						q.notify();
-					}
-				}
+					q.notify();
 			}
 		}
 	}

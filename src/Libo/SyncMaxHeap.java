@@ -1,8 +1,7 @@
 import static java.util.Arrays.copyOf;
 
 /**
- * This class is a synchronized implementation of maximum heap.
- * Function calls to size(), add( E e ), head(), and peek() are mutually exclusive.
+ * This class is a synchronized implementation of maximum heap. Function calls to add( E e ), head(), and peek() are mutually exclusive.
  * No documentation is created for methods, as they are exactly the same as a naive max heap.
  * @param <E> extends Comparable<E>
  */
@@ -12,15 +11,6 @@ public class SyncMaxHeap<E extends Comparable<E>>
 	private E[] a=(E[]) new Comparable[10];
 	private int c=0;
 	private final int[] m=new int[0];
-	
-	// TODO for debugging only
-	public boolean isEmpty()
-	{
-		synchronized( m )
-		{
-			return c==0;
-		}
-	}
 	
 	public int size()
 	{
