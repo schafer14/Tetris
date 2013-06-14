@@ -1,4 +1,5 @@
 import static java.util.Arrays.copyOf;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Game
 {
@@ -102,7 +103,7 @@ public class Game
 				}
 			}
 			head=search( q );
-			//io.write( pn + "\n" );
+			//io.write( head + "\n" );
 			a=head.rootTet;
 			buf=head.buf;
 			score+=a[3];
@@ -165,10 +166,11 @@ public class Game
 	
 	private class Search implements Runnable
 	{
-		private volatile int threadCount=0;
+		private final AtomicInteger threadCount=new AtomicInteger();
 		private final long cutOff;
-		private SyncMaxHeap<Node> q;
+		private final SyncMaxHeap<Node> q;
 		private volatile Node optimal;
+		private final int[] optimalMon=new int[0];
 		
 		private Search( SyncMaxHeap<Node> q )
 		{
@@ -180,10 +182,7 @@ public class Game
 		@Override
 		public void run()
 		{
-			synchronized( q )
-			{
-				threadCount++;
-			}
+			threadCount.incrementAndGet();
 			Node head, cn;
 			int i, j, jl, k, kl;
 			boolean realTet;
@@ -215,7 +214,7 @@ public class Game
 							/* TODO Theoretically, a tetrimino that does not exist in the buffer has a 1/tetTypes probability to come.
 							 * However, in real practice, it seems that such a node is seldomly chosen. */
 							cn.mark=realTet ? Evaluator.mark( cn ) : Evaluator.mark( cn )*tetTypes;
-							synchronized( optimal )
+							synchronized( optimalMon )
 							{
 								if( cn.mark>optimal.mark )
 									optimal=cn;
@@ -227,11 +226,13 @@ public class Game
 					}
 				}
 			}
-			synchronized( q )
+			if( threadCount.decrementAndGet()==0 )
 			{
-				// The caller can be notified multiple times. However, the first notification is already the end of search.
-				if( --threadCount==0 )
+				// The caller can be notified multiple times, although the first notification is already the end of search.
+				synchronized( q )
+				{
 					q.notify();
+				}
 			}
 		}
 	}

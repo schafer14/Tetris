@@ -15,8 +15,6 @@ public class FileIO implements IO
 	private char[] ib; // ib=input buffer
 	private boolean[] iv; // v=input buffer validity flags
 	private int ic, il; // ic=input buffer cursor; il=effective input buffer length
-	private String[] ob; // ob=output buffer
-	private int oc, ol; // oc=output buffer cursor; ol=output buffer length
 	
 	/**
 	 * This initializer returns a new FileIO object.
@@ -54,13 +52,10 @@ public class FileIO implements IO
 		String e=System.getProperty( "file.encoding" );
 		r=Channels.newReader( is.getChannel(), e );
 		w=Channels.newWriter( os.getChannel(), e );
-		this.il=inputBufferSize;
+		il=inputBufferSize;
 		ib=new char[inputBufferSize];
 		iv=new boolean[inputBufferSize];
 		ic=inputBufferSize; // this line ensures that the buffer is loaded at the first time read() is called
-		this.ol=outputBufferSize;
-		ob=new String[outputBufferSize];
-		oc=0;
 	}
 	
 	/**
@@ -124,27 +119,17 @@ public class FileIO implements IO
 	 * This method writes a given String to the output file. No EOL is appended after the String.
 	 * The write operation is buffered. The buffer is flushed every time it is full. The last flush happens when close() is called.
 	 * @param s - the String to write
-	 */
+	 */	
 	@Override
 	public void write( String s )
 	{
-		if( oc<ol )
-			ob[oc++]=s;
-		else
+		try
 		{
-			try
-			{
-				for( int i=0 ; i<ol ; i++ )
-					w.write( ob[i] );
-				w.flush();
-			}
-			catch( IOException e )
-			{
-				e.printStackTrace();
-				close();
-			}
-			ob[0]=s;
-			oc=1;
+			w.write(s);
+		}
+		catch( IOException e )
+		{
+			e.printStackTrace();
 		}
 	}
 	
