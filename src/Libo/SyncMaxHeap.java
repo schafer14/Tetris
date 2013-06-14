@@ -56,7 +56,7 @@ public class SyncMaxHeap<E extends Comparable<E>>
 				a[c]=null;
 				down( 0 );
 			}
-			if( a.length>=20 && c<=a.length/4 )
+			if( a.length>=20 && c<a.length/4 )
 				a=copyOf( a, a.length/2 );
 			return r;
 		}

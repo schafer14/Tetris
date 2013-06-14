@@ -1,3 +1,4 @@
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -21,9 +22,8 @@ public class FileIO implements IO
 	 * @param inputFileName - input file name
 	 * @param outputFileName - output file name
 	 * @param inputBufferSize - input buffer size
-	 * @param outputBufferSize - output buffer size
 	 */
-	public FileIO( String inputFileName, String outputFileName, int inputBufferSize, int outputBufferSize )
+	public FileIO( String inputFileName, String outputFileName, int inputBufferSize )
 	{
 		try
 		{
@@ -33,11 +33,13 @@ public class FileIO implements IO
 		{
 			e.printStackTrace();
 		}
+		File f=new File( outputFileName );
 		try
 		{
-			os=new FileOutputStream( outputFileName );
+			f.createNewFile();
+			os=new FileOutputStream( f );
 		}
-		catch( FileNotFoundException e )
+		catch( IOException e ) // for JDK 1.7 or above: catch( IOException | SecurityException e )
 		{
 			e.printStackTrace();
 			try
@@ -117,7 +119,7 @@ public class FileIO implements IO
 	
 	/**
 	 * This method writes a given String to the output file. No EOL is appended after the String.
-	 * The write operation is buffered. The buffer is flushed every time it is full. The last flush happens when close() is called.
+	 * The write operation is not buffered.
 	 * @param s - the String to write
 	 */	
 	@Override
@@ -130,6 +132,7 @@ public class FileIO implements IO
 		catch( IOException e )
 		{
 			e.printStackTrace();
+			close();
 		}
 	}
 	
